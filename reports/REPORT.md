@@ -1,6 +1,6 @@
 # Lab 25B — Report
 
-**Họ tên / nhóm:** Nguyễn Khánh Sơn (MSV: 2A202602388)  **Commit:** `18cc181d9577bd2e4c45ab64eb6e23da86c20030`  **Điểm tự động (`make grade`):** 84.0 / 88 (đạt tối đa điểm phần thi tự động công khai)
+**Họ tên / nhóm:** Nguyễn Khánh Sơn (MSV: 2A202602388)  **Commit:** `4cf5fec8f1ceb8da81d39adfe50a6bccd67fff57`  **Điểm tự động (`make grade`):** 84.0 / 88 (đạt tối đa điểm phần thi tự động công khai)
 
 > Mọi nhận định dưới đây đều dựa trên số liệu thực nghiệm trích xuất từ `reports/gameday/*.json`, `reports/cache/*.json`, `reports/workflows.json`, `reports/slo.json` và file chuỗi thời gian CSV.
 
