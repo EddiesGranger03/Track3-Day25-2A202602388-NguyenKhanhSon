@@ -53,6 +53,36 @@
           "seed": 25,
           "pass": true,
           "failed": []
+        },
+        {
+          "seed": 26,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 27,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 3,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 4,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 58,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 85,
+          "pass": true,
+          "failed": []
         }
       ]
     },
@@ -63,6 +93,36 @@
       "runs": [
         {
           "seed": 25,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 26,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 27,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 3,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 4,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 58,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 85,
           "pass": true,
           "failed": []
         }
@@ -77,6 +137,36 @@
           "seed": 25,
           "pass": true,
           "failed": []
+        },
+        {
+          "seed": 26,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 27,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 3,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 4,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 58,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 85,
+          "pass": true,
+          "failed": []
         }
       ]
     },
@@ -87,6 +177,36 @@
       "runs": [
         {
           "seed": 25,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 26,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 27,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 3,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 4,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 58,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 85,
           "pass": true,
           "failed": []
         }
@@ -101,6 +221,36 @@
           "seed": 25,
           "pass": true,
           "failed": []
+        },
+        {
+          "seed": 26,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 27,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 3,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 4,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 58,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 85,
+          "pass": true,
+          "failed": []
         }
       ]
     },
@@ -111,6 +261,36 @@
       "runs": [
         {
           "seed": 25,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 26,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 27,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 3,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 4,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 58,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 85,
           "pass": true,
           "failed": []
         }
@@ -130,6 +310,60 @@
         "lost_refunds": 0,
         "completion_rate": 1.0,
         "wasted_llm_per_crash": 0.303
+      },
+      {
+        "seed": 26,
+        "pass": true,
+        "duplicate_refunds": 0,
+        "duplicate_emails": 0,
+        "lost_refunds": 0,
+        "completion_rate": 1.0,
+        "wasted_llm_per_crash": 0.241
+      },
+      {
+        "seed": 27,
+        "pass": true,
+        "duplicate_refunds": 0,
+        "duplicate_emails": 0,
+        "lost_refunds": 0,
+        "completion_rate": 1.0,
+        "wasted_llm_per_crash": 0.338
+      },
+      {
+        "seed": 3,
+        "pass": true,
+        "duplicate_refunds": 0,
+        "duplicate_emails": 0,
+        "lost_refunds": 0,
+        "completion_rate": 1.0,
+        "wasted_llm_per_crash": 0.271
+      },
+      {
+        "seed": 4,
+        "pass": true,
+        "duplicate_refunds": 0,
+        "duplicate_emails": 0,
+        "lost_refunds": 0,
+        "completion_rate": 1.0,
+        "wasted_llm_per_crash": 0.205
+      },
+      {
+        "seed": 58,
+        "pass": true,
+        "duplicate_refunds": 0,
+        "duplicate_emails": 0,
+        "lost_refunds": 0,
+        "completion_rate": 1.0,
+        "wasted_llm_per_crash": 0.417
+      },
+      {
+        "seed": 85,
+        "pass": true,
+        "duplicate_refunds": 0,
+        "duplicate_emails": 0,
+        "lost_refunds": 0,
+        "completion_rate": 1.0,
+        "wasted_llm_per_crash": 0.22
       }
     ]
   },
@@ -189,6 +423,36 @@
       "runs": [
         {
           "seed": 25,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 26,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 27,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 3,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 4,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 58,
+          "pass": true,
+          "failed": []
+        },
+        {
+          "seed": 85,
           "pass": true,
           "failed": []
         }

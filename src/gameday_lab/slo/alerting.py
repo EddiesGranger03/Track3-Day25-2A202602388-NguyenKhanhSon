@@ -15,6 +15,7 @@ Tests: tests/test_alerting.py, then `make slo`.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from fractions import Fraction
 
 
 @dataclass(frozen=True)
@@ -71,6 +72,8 @@ class BurnRateAlerter:
             raise ValueError("slo must be in (0, 1)")
         self.slo = slo
         self.rules = rules
+        # Preserve decimal SLO values so exact burn thresholds remain inclusive.
+        self._error_budget_fraction = Fraction(1) - Fraction(str(slo))
 
     def burn_rate(self, total: WindowSums, bad: WindowSums, end: int, length: int) -> float:
         """(bad / total over the window) / (1 - slo); 0.0 if total is 0."""
@@ -78,8 +81,10 @@ class BurnRateAlerter:
         if tot == 0:
             return 0.0
         bad_count = bad.sum(end, length)
-        error_ratio = bad_count / tot
-        return error_ratio / (1.0 - self.slo)
+        return (
+            bad_count * self._error_budget_fraction.denominator
+            / (tot * self._error_budget_fraction.numerator)
+        )
 
     def evaluate(self, total: list[int], bad: list[int]) -> list[AlertEvent]:
         """One AlertEvent per contiguous firing episode of each rule.
@@ -95,12 +100,21 @@ class BurnRateAlerter:
         events: list[AlertEvent] = []
 
         for rule in self.rules:
+            threshold = Fraction(str(rule.burn_rate)) * self._error_budget_fraction
             in_episode = False
             start_min = 0
             for i in range(n):
-                burn_long = self.burn_rate(total_sums, bad_sums, i, rule.long_min)
-                burn_short = self.burn_rate(total_sums, bad_sums, i, rule.short_min)
-                fires = (burn_long >= rule.burn_rate and burn_short >= rule.burn_rate)
+                long_total = total_sums.sum(i, rule.long_min)
+                short_total = total_sums.sum(i, rule.short_min)
+                # Compare integer counts, avoiding both rounding error and a
+                # tolerance that could admit a genuinely sub-threshold burn.
+                fires = (
+                    long_total > 0 and short_total > 0
+                    and bad_sums.sum(i, rule.long_min) * threshold.denominator
+                    >= long_total * threshold.numerator
+                    and bad_sums.sum(i, rule.short_min) * threshold.denominator
+                    >= short_total * threshold.numerator
+                )
 
                 if fires and not in_episode:
                     in_episode = True
@@ -126,23 +140,27 @@ def error_budget_report(total: list[int], bad: list[int], slo: float = 0.995) ->
       availability      1 - bad / requests              (round to 6 decimals)
       budget_consumed   bad / allowed_bad               (round to 4 decimals)
       budget_remaining  1 - budget_consumed             (round to 4 decimals)
-      freeze_releases   True when nothing is left (budget_remaining <= 0)
+      freeze_releases   True when the unrounded budget is exhausted
+
+    With no requests, report full availability, no consumption, and no freeze.
     """
     requests = sum(total)
-    allowed_bad = round((1.0 - slo) * requests, 1)
+    if not 0 < slo < 1:
+        raise ValueError("slo must be in (0, 1)")
+    allowed_bad = (Fraction(1) - Fraction(str(slo))) * requests
     bad_sum = sum(bad)
     availability = round(1.0 - (bad_sum / requests), 6) if requests else 1.0
-    budget_consumed = round(bad_sum / allowed_bad, 4) if allowed_bad else 0.0
-    budget_remaining = round(1.0 - budget_consumed, 4)
-    freeze_releases = bool(budget_remaining <= 0.0)
+    budget_consumed = bad_sum / allowed_bad if allowed_bad else Fraction(0)
+    budget_remaining = 1 - budget_consumed
+    freeze_releases = bool(requests and budget_remaining <= 0)
 
     return {
         "requests": requests,
-        "allowed_bad": allowed_bad,
+        "allowed_bad": round(float(allowed_bad), 1),
         "bad": bad_sum,
         "availability": availability,
-        "budget_consumed": budget_consumed,
-        "budget_remaining": budget_remaining,
+        "budget_consumed": round(float(budget_consumed), 4),
+        "budget_remaining": round(float(budget_remaining), 4),
         "freeze_releases": freeze_releases,
     }
 

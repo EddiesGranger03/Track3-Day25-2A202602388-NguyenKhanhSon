@@ -54,7 +54,7 @@ client:
 # ----------------------------------------------------------------------------
 cache:
   similarity_threshold: 0.90
-  ttl_s: 45
+  ttl_s: 30
   max_stale_s: 200
   max_entries: 500
 

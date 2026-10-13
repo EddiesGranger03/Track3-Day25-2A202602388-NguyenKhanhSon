@@ -10,6 +10,7 @@ Per-call scratch space lives in ``call.state`` (a dict). Suggested keys:
     "ladder": list[str]  providers this call may use, in order
     "idx":    int        position of the provider we are currently on
     "tries":  int        attempts already made on that provider
+    "attempted_providers": set[str] providers with an observed attempt outcome
 
 Decision table for ``on_error`` (implement it!):
 
@@ -32,8 +33,8 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from gameday_lab.breaker import BreakerState, Permit, SlidingWindowBreaker  # noqa: F401
-from gameday_lab.errors import ErrorKind, classify, counts_toward_breaker  # noqa: F401
+from gameday_lab.breaker import BreakerState, Permit, SlidingWindowBreaker
+from gameday_lab.errors import ErrorKind, classify, counts_toward_breaker
 from gameday_lab.retry import FullJitterBackoff, RetryBudget
 from gameday_lab.sim.contracts import (
     Action,
@@ -82,12 +83,14 @@ class ResilientClient(BaseClient):
 
     # ------------------------------------------------------------------ provided helper
     def _send(self, call: CallContext, provider: str, now: float, delay: float) -> Action | None:
-        """PROVIDED. Build a Send for ``provider`` (after ``delay``), or None if its breaker refuses.
+        """Build a Send, or None if cooldown, breaker or retry budget refuses.
 
         Takes a breaker permit (carried in ``tag``), and caps the attempt timeout
         so it never runs past the call's deadline. Returns GiveUp("deadline") if
         there is not enough time left for a meaningful attempt.
         """
+        if self.cooldown_until[provider] > now + delay:
+            return None
         permit = self.breakers[provider].allow(now)
         if permit is None:
             return None
@@ -95,7 +98,14 @@ class ResilientClient(BaseClient):
         if timeout < self.min_time_left_s:
             self.breakers[provider].release(permit, now)
             return GiveUp("deadline")
+        if provider in call.state["attempted_providers"] and not self.budget.try_acquire_retry(now):
+            self.breakers[provider].release(permit, now)
+            return None
         return Send(provider, timeout_s=timeout, delay_s=delay, tag=permit)
+
+    def _record_attempt(self, attempt: Attempt) -> None:
+        """An outcome confirms that a scheduled provider was actually attempted."""
+        attempt.call.state["attempted_providers"].add(attempt.provider)
 
     # ------------------------------------------------------------------ TODO
     def ladder(self, task: str) -> list[str]:
@@ -142,20 +152,17 @@ class ResilientClient(BaseClient):
         candidates: list[tuple[float, int, str]] = []
         for idx, p in enumerate(ladder):
             wait_s = self.cooldown_until[p] - now
-            if 0.0 < wait_s <= RATE_LIMIT_WAIT_MAX_S:
-                if self.breakers[p].state is not BreakerState.OPEN:
-                    if (now + wait_s + self.min_time_left_s) <= call.deadline:
-                        candidates.append((wait_s, idx, p))
+            if (0.0 < wait_s <= RATE_LIMIT_WAIT_MAX_S
+                    and self.breakers[p].state is not BreakerState.OPEN
+                    and (now + wait_s + self.min_time_left_s) <= call.deadline):
+                candidates.append((wait_s, idx, p))
 
-        if candidates:
-            candidates.sort()
-            best_wait, best_idx, best_p = candidates[0]
-            call.state["idx"] = best_idx
-            call.state["tries"] = 0
-            action = self._send(call, best_p, now, delay=best_wait)
+        for wait_s, idx, provider in sorted(candidates):
+            action = self._send(call, provider, now, delay=wait_s)
             if action is not None:
                 if isinstance(action, Send):
-                    call.state["tries"] += 1
+                    call.state["idx"] = idx
+                    call.state["tries"] = 1
                 return action
 
         return GiveUp("no_provider_available")
@@ -168,16 +175,19 @@ class ResilientClient(BaseClient):
         call.state["ladder"] = self.ladder(call.task)
         call.state["idx"] = 0
         call.state["tries"] = 0
+        call.state["attempted_providers"] = set()
         return self._route(call, now, delay=0.0)
 
     def on_success(self, attempt: Attempt, now: float, latency_s: float) -> None:
         """Report success + latency to the provider's breaker (attempt.tag is the Permit)."""
+        self._record_attempt(attempt)
         permit = attempt.tag
         if isinstance(permit, Permit):
             self.breakers[attempt.provider].on_success(permit, now, latency_s)
 
     def on_error(self, attempt: Attempt, err: ProviderError, now: float) -> Action:
         """Implement the decision table in the module docstring."""
+        self._record_attempt(attempt)
         kind = classify(err)
         provider = attempt.provider
         permit = attempt.tag
@@ -195,20 +205,20 @@ class ResilientClient(BaseClient):
             return GiveUp("client_error")
 
         if kind is ErrorKind.QUOTA_EXHAUSTED:
-            self.cooldown_until[provider] = now + self.quota_cooldown_s
+            self.cooldown_until[provider] = max(self.cooldown_until[provider], now + self.quota_cooldown_s)
             call.state["idx"] += 1
             call.state["tries"] = 0
             return self._route(call, now, delay=0.0)
 
         if kind is ErrorKind.RATE_LIMITED:
             retry_after = err.retry_after if (err.retry_after is not None and err.retry_after > 0) else 1.0
-            self.cooldown_until[provider] = now + retry_after
+            self.cooldown_until[provider] = max(self.cooldown_until[provider], now + retry_after)
             call.state["idx"] += 1
             call.state["tries"] = 0
             return self._route(call, now, delay=0.0)
 
         # Transient errors: OVERLOADED, SERVER_ERROR, TIMEOUT
-        if call.state["tries"] < self.max_attempts_per_provider and self.budget.try_acquire_retry(now):
+        if call.state["tries"] < self.max_attempts_per_provider:
             delay = self.backoff.delay(call.state["tries"], retry_after=err.retry_after)
             if (now + delay + self.min_time_left_s) <= call.deadline:
                 action = self._send(call, provider, now, delay)

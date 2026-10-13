@@ -169,7 +169,6 @@ class SlidingWindowBreaker:
         if permit.generation != self.generation:
             return
 
-        if self.state is BreakerState.HALF_OPEN and permit.probe:
-            if self.probes_in_flight > 0:
-                self.probes_in_flight -= 1
+        if self.state is BreakerState.HALF_OPEN and permit.probe and self.probes_in_flight > 0:
+            self.probes_in_flight -= 1
 
